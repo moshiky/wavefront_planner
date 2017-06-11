@@ -25,30 +25,23 @@ class WavefrontPlanner:
         # initiate update counter
         self.__update_counter = 0
 
-    def __get_child_nodes(self, current_node):
+    def __is_valid_child(self, child_node, path_to_root):
+        return \
+            child_node not in path_to_root \
+            and 0 <= child_node[0] < self.__world_height \
+            and 0 <= child_node[1] < self.__world_width \
+            and self.__world_map[child_node[0]][child_node[1]] != 1
+
+    def __get_child_nodes(self, current_node, path_to_root):
         child_nodes = list()
 
-        not_min_height = current_node[0] > 0
-        not_min_width = current_node[1] > 0
-
-        if not_min_height and not_min_width:
-            new_node = list(current_node)
-            new_node[0] -= 1
-            new_node[1] -= 1
-            if self.__world_map[new_node[0]][new_node[1]] != 1:
-                child_nodes.append(new_node)
-
-        if not_min_width:
-            new_node = list(current_node)
-            new_node[1] -= 1
-            if self.__world_map[new_node[0]][new_node[1]] != 1:
-                child_nodes.append(new_node)
-
-        if not_min_height:
-            new_node = list(current_node)
-            new_node[0] -= 1
-            if self.__world_map[new_node[0]][new_node[1]] != 1:
-                child_nodes.append(new_node)
+        for i in range(-1, 2):
+            for j in range(-1, 2):
+                new_node = list(current_node)
+                new_node[0] += i
+                new_node[1] += j
+                if self.__is_valid_child(new_node, path_to_root):
+                    child_nodes.append(new_node)
 
         return child_nodes
 
@@ -65,7 +58,7 @@ class WavefrontPlanner:
         current_node_weight = self.__weights[current_node[0]][current_node[1]]
 
         # get child nodes
-        child_nodes = self.__get_child_nodes(current_node)
+        child_nodes = self.__get_child_nodes(current_node, path_to_root)
 
         # update child nodes
         for node in child_nodes:

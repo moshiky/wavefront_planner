@@ -19,3 +19,6 @@ class Stack:
         last_item = self.top()
         self.__storage = self.__storage[:-1]
         return last_item
+
+    def __contains__(self, item):
+        return item in self.__storage
