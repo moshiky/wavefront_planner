@@ -92,22 +92,31 @@ class WavefrontPlanner:
         :return:
         """
         self.__world_map = [
-            [2, 0, 0, 0, 0, 0, 0, 0],
+            [0, 3, 0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 0, 0, 0],
+            [1, 1, 1, 1, 1, 0, 0, 0],
             [0, 0, 0, 1, 1, 0, 0, 0],
-            [0, 0, 0, 1, 1, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 3]
+            [0, 0, 2, 0, 0, 0, 1, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0]
         ]
         self.__world_height = len(self.__world_map)
         self.__world_width = len(self.__world_map[0])
 
-        # find start coordinates
-        self.__start_coordinates = [0, 0]
+        # search start and goal coordinates
+        self.__start_coordinates = None
+        self.__goal_coordinates = None
 
-        # find goal coordinates
-        self.__goal_coordinates = [5, 7]
+        i = 0
+        while (self.__start_coordinates is None or self.__goal_coordinates is None) and i < self.__world_height:
+            j = 0
+            while (self.__start_coordinates is None or self.__goal_coordinates is None) and j < self.__world_width:
+                if self.__world_map[i][j] == 2:
+                    self.__start_coordinates = [i, j]
+                elif self.__world_map[i][j] == 3:
+                    self.__goal_coordinates = [i, j]
+                j += 1
 
+            i += 1
 
 if __name__ == '__main__':
     start = time.time()
