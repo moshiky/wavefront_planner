@@ -53,12 +53,15 @@ class WavefrontPlanner:
         return child_nodes
 
     def propagate_wavefront(self):
-        self.__dfs_update(self.__goal_coordinates)
+        path_to_root = Stack()
+        path_to_root.push(self.__goal_coordinates)
+        self.__dfs_update(path_to_root)
 
         print '********************************'
         print 'nodes=', self.__node_counter, 'updates=', self.__update_counter
 
-    def __dfs_update(self, current_node):
+    def __dfs_update(self, path_to_root):
+        current_node = path_to_root.top()
         current_node_weight = self.__weights[current_node[0]][current_node[1]]
 
         # get child nodes
@@ -78,7 +81,9 @@ class WavefrontPlanner:
                 print '\n'.join(str(x) for x in self.__weights)
 
                 # call DFS search
-                self.__dfs_update(node)
+                path_to_root.push(node)
+                self.__dfs_update(path_to_root)
+                path_to_root.pop()
 
     def get_optimal_path(self):
         # find optimal path
