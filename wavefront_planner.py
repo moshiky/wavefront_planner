@@ -46,14 +46,18 @@ class WavefrontPlanner:
         return child_nodes
 
     def propagate_wavefront(self):
-        path_to_root = Stack()
-        path_to_root.push(self.__goal_coordinates)
-        self.__dfs_update(path_to_root)
+        limit = 0
+        should_stop = False
+        while not should_stop:
+            path_to_root = Stack()
+            path_to_root.push(self.__goal_coordinates)
+            should_stop = should_stop and self.__dfs_update(path_to_root, limit)
+            limit += 1
 
         print '********************************'
         print 'nodes=', self.__node_counter, 'updates=', self.__update_counter
 
-    def __dfs_update(self, path_to_root):
+    def __dfs_update(self, path_to_root, limit):
         current_node = path_to_root.top()
         current_node_weight = self.__weights[current_node[0]][current_node[1]]
 
@@ -66,6 +70,9 @@ class WavefrontPlanner:
             node_weight = self.__weights[node[0]][node[1]]
 
             if node_weight > current_node_weight + 1:
+                if limit == 0:
+                    return False
+
                 self.__weights[node[0]][node[1]] = current_node_weight + 1
                 self.__update_counter += 1
 
