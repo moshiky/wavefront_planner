@@ -45,19 +45,23 @@ class WavefrontPlanner:
 
         return child_nodes
 
-    def propagate_wavefront(self):
+    def propagate_wavefront_ids(self):
         limit = 0
         should_stop = False
         while not should_stop:
+            limit += 1
             path_to_root = Stack()
             path_to_root.push(self.__goal_coordinates)
-            should_stop = should_stop and self.__dfs_update(path_to_root, limit)
-            limit += 1
+            should_stop = should_stop or self.__dfs_update(path_to_root, limit)
 
-        print '********************************'
-        print 'nodes=', self.__node_counter, 'updates=', self.__update_counter
+            print '#################################'
+            print 'nodes=', self.__node_counter, 'updates=', self.__update_counter, 'limit=', limit
+            print '#################################'
 
     def __dfs_update(self, path_to_root, limit):
+        if limit == 0:
+            return False
+
         current_node = path_to_root.top()
         current_node_weight = self.__weights[current_node[0]][current_node[1]]
 
@@ -70,8 +74,6 @@ class WavefrontPlanner:
             node_weight = self.__weights[node[0]][node[1]]
 
             if node_weight > current_node_weight + 1:
-                if limit == 0:
-                    return False
 
                 self.__weights[node[0]][node[1]] = current_node_weight + 1
                 self.__update_counter += 1
@@ -80,10 +82,19 @@ class WavefrontPlanner:
                 print '********************************'
                 print '\n'.join(str(x) for x in self.__weights)
 
-                # call DFS search
-                path_to_root.push(node)
-                self.__dfs_update(path_to_root)
-                path_to_root.pop()
+                # stop if start node reached
+                if node[0] == self.__start_coordinates[0] and node[1] == self.__start_coordinates[1]:
+                    return True
+
+            # call DFS search
+            path_to_root.push(node)
+            should_stop = self.__dfs_update(path_to_root, limit-1)
+            path_to_root.pop()
+            if should_stop:
+                return True
+
+        # if got here so shouldn't stop
+        return False
 
     def get_optimal_path(self):
         # find optimal path
@@ -102,8 +113,8 @@ class WavefrontPlanner:
             [0, 3, 0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 0, 0, 0],
             [1, 1, 1, 1, 1, 0, 0, 0],
-            [0, 0, 0, 1, 1, 0, 0, 0],
-            [0, 0, 2, 0, 0, 0, 1, 0],
+            [0, 2, 0, 1, 1, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 1, 0],
             [0, 0, 0, 0, 0, 0, 0, 0]
         ]
         self.__world_height = len(self.__world_map)
@@ -129,7 +140,7 @@ if __name__ == '__main__':
     start = time.time()
 
     planner = WavefrontPlanner('')
-    planner.propagate_wavefront()
+    planner.propagate_wavefront_ids()
     optimal_path = planner.get_optimal_path()
     planner.store_path_image(optimal_path)
 
