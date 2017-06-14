@@ -1,6 +1,7 @@
 
 import time
 from stack import Stack
+from queue import Queue
 
 
 class WavefrontPlanner:
@@ -10,11 +11,11 @@ class WavefrontPlanner:
 
         # initiate weights
         self.__weights = list()
-        max_possible_steps = (self.__world_height * self.__world_width) + 1
-        print "max steps:", max_possible_steps
+        self.__max_possible_steps = (self.__world_height * self.__world_width) + 1
+        print "max steps:", self.__max_possible_steps
 
         for i in range(self.__world_height):
-            self.__weights.append([max_possible_steps] * self.__world_width)
+            self.__weights.append([self.__max_possible_steps] * self.__world_width)
 
         # initiate goal weight
         self.__weights[self.__goal_coordinates[0]][self.__goal_coordinates[1]] = 2
@@ -45,18 +46,68 @@ class WavefrontPlanner:
 
         return child_nodes
 
+    def propagate_wavefront_bfs(self):
+        wavefront = Queue()
+        wavefront.push(self.__goal_coordinates)
+
+        print '#################################'
+        if not self.__bfs_update(wavefront):
+            print "start can't be reached"
+
+        print 'nodes=', self.__node_counter, 'updates=', self.__update_counter
+        print '#################################'
+
+    def __bfs_update(self, wavefront):
+        start_found = False
+        visited = list()
+
+        while not wavefront.is_empty() and not start_found:
+            current_node = wavefront.pop()
+            visited.append(current_node)
+
+            current_node_weight = self.__weights[current_node[0]][current_node[1]]
+
+            # get child nodes
+            child_nodes = self.__get_child_nodes(current_node, wavefront)
+
+            # update child nodes
+            for node in child_nodes:
+                self.__node_counter += 1
+                node_weight = self.__weights[node[0]][node[1]]
+
+                if node_weight > current_node_weight + 1:
+
+                    self.__weights[node[0]][node[1]] = current_node_weight + 1
+                    self.__update_counter += 1
+
+                    # print the cost of the end node
+                    print '********************************'
+                    print '\n'.join(str(x) for x in self.__weights)
+
+                    # stop if start node reached
+                    if node[0] == self.__start_coordinates[0] and node[1] == self.__start_coordinates[1]:
+                        start_found = True
+
+                # add node to wavefront
+                if node not in visited:
+                    wavefront.push(node)
+
+        # return whether the start node found or not
+        return start_found
+
     def propagate_wavefront_ids(self):
         limit = 0
         should_stop = False
-        while not should_stop:
+        while not should_stop or limit == self.__max_possible_steps:
             limit += 1
             path_to_root = Stack()
             path_to_root.push(self.__goal_coordinates)
+            print '>> limit=', limit
             should_stop = should_stop or self.__dfs_update(path_to_root, limit)
 
-            print '#################################'
-            print 'nodes=', self.__node_counter, 'updates=', self.__update_counter, 'limit=', limit
-            print '#################################'
+        print '#################################'
+        print 'nodes=', self.__node_counter, 'updates=', self.__update_counter
+        print '#################################'
 
     def __dfs_update(self, path_to_root, limit):
         if limit == 0:
@@ -110,11 +161,11 @@ class WavefrontPlanner:
         :return:
         """
         self.__world_map = [
-            [0, 3, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0],
-            [1, 1, 1, 1, 1, 0, 0, 0],
-            [0, 2, 0, 1, 1, 0, 0, 0],
+            [0, 3, 0, 1, 1, 0, 0, 0],
             [0, 0, 0, 0, 0, 0, 1, 0],
+            [1, 1, 1, 1, 0, 0, 1, 0],
+            [0, 2, 0, 1, 1, 0, 1, 0],
+            [0, 0, 1, 0, 1, 1, 1, 0],
             [0, 0, 0, 0, 0, 0, 0, 0]
         ]
         self.__world_height = len(self.__world_map)
@@ -140,7 +191,8 @@ if __name__ == '__main__':
     start = time.time()
 
     planner = WavefrontPlanner('')
-    planner.propagate_wavefront_ids()
+    # planner.propagate_wavefront_ids()
+    planner.propagate_wavefront_bfs()
     optimal_path = planner.get_optimal_path()
     planner.store_path_image(optimal_path)
 
