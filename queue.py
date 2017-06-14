@@ -7,7 +7,7 @@ class Queue:
         return len(self.__storage) == 0
 
     def push(self, item):
-        self.__storage = [item] + self.__storage
+        self.__storage.append(item)
 
     def first(self):
         if not self.is_empty():
