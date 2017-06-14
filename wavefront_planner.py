@@ -164,46 +164,32 @@ class WavefrontPlanner:
         """
         # read file
         with open(map_file_path) as image_file_obj:
-            image_file = misc.imread(image_file_obj)
+            image_content = misc.imread(image_file_obj)
 
-        self.__world_map = list()
-        for i in range(image_file.shape[0]):    # height
-            self.__world_map.append(list())
-            for j in range(image_file.shape[1]):    # width
-                cell_value = 0
-                if image_file[i][j] == [0, 0, 0]:    # black
-                    
-                if image_file[i][j] == [0, 255, 0]:    # blue
-                    cell_value = 2
-                if image_file[i][j] == [255, 0, 0]:    # red
-                    cell_value = 3
-
-        self.__world_map = [
-            [0, 3, 0, 1, 1, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 1, 0],
-            [1, 1, 1, 1, 0, 0, 1, 0],
-            [0, 2, 0, 1, 1, 0, 1, 0],
-            [0, 0, 1, 0, 1, 1, 1, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0]
-        ]
-        self.__world_height = len(self.__world_map)
-        self.__world_width = len(self.__world_map[0])
-
-        # search start and goal coordinates
         self.__start_coordinates = None
         self.__goal_coordinates = None
+        self.__world_height = image_content.shape[0]
+        self.__world_width = image_content.shape[1]
 
-        i = 0
-        while (self.__start_coordinates is None or self.__goal_coordinates is None) and i < self.__world_height:
-            j = 0
-            while (self.__start_coordinates is None or self.__goal_coordinates is None) and j < self.__world_width:
-                if self.__world_map[i][j] == 2:
+        self.__world_map = list()
+        for i in range(self.__world_height):
+            self.__world_map.append(list())
+            for j in range(self.__world_width):
+                cell_value = 0  # white
+                ccolor = image_content[i][j]
+                if image_content[i][j] == [0, 0, 0]:    # black
+                    cell_value = 1
+                elif image_content[i][j] == [0, 255, 0] and self.__start_coordinates is None:    # blue
+                    cell_value = 2
                     self.__start_coordinates = [i, j]
-                elif self.__world_map[i][j] == 3:
+                elif image_content[i][j] == [255, 0, 0] and self.__goal_coordinates is None:    # red
+                    cell_value = 3
                     self.__goal_coordinates = [i, j]
-                j += 1
-
-            i += 1
+                elif image_content[i][j] != [255, 255, 255]:
+                    raise Exception(
+                        'cell [{i}, {j}] color not allowed: {color}'.format(i=i, j=j, color=image_content[i][j])
+                    )
+                self.__world_map[i].append(cell_value)
 
 if __name__ == '__main__':
     start = time.time()
