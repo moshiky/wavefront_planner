@@ -1,5 +1,7 @@
 
+import os
 import time
+from scipy import misc
 from stack import Stack
 from queue import Queue
 
@@ -160,6 +162,22 @@ class WavefrontPlanner:
         :param map_file_path:
         :return:
         """
+        # read file
+        with open(map_file_path) as image_file_obj:
+            image_file = misc.imread(image_file_obj)
+
+        self.__world_map = list()
+        for i in range(image_file.shape[0]):    # height
+            self.__world_map.append(list())
+            for j in range(image_file.shape[1]):    # width
+                cell_value = 0
+                if image_file[i][j] == [0, 0, 0]:    # black
+                    
+                if image_file[i][j] == [0, 255, 0]:    # blue
+                    cell_value = 2
+                if image_file[i][j] == [255, 0, 0]:    # red
+                    cell_value = 3
+
         self.__world_map = [
             [0, 3, 0, 1, 1, 0, 0, 0],
             [0, 0, 0, 0, 0, 0, 1, 0],
@@ -190,7 +208,7 @@ class WavefrontPlanner:
 if __name__ == '__main__':
     start = time.time()
 
-    planner = WavefrontPlanner('')
+    planner = WavefrontPlanner(os.path.join(os.path.dirname(__file__), '..', 'files', 'map_with_goals.bmp'))
     # planner.propagate_wavefront_ids()
     planner.propagate_wavefront_bfs()
     optimal_path = planner.get_optimal_path()
