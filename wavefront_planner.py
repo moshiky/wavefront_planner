@@ -44,12 +44,11 @@ class WavefrontPlanner:
 
         for i in range(-1, 2):
             for j in range(-1, 2):
-                if i == 0 or j == 0:
-                    new_node = list(current_node)
-                    new_node[0] += i
-                    new_node[1] += j
-                    if self.__is_valid_child(new_node, path_to_root):
-                        child_nodes.append(new_node)
+                new_node = list(current_node)
+                new_node[0] += i
+                new_node[1] += j
+                if self.__is_valid_child(new_node, path_to_root):
+                    child_nodes.append(new_node)
 
         return child_nodes
 
@@ -90,10 +89,15 @@ class WavefrontPlanner:
             for node in child_nodes:
                 self.__node_counter += 1
                 node_weight = self.__weights[node[0]][node[1]]
+                move_direction = WavefrontPlanner.__get_direction(current_node, node)
+                if 0 in move_direction:
+                    addition = 1
+                else:
+                    addition = np.sqrt(2)
 
-                if node_weight > current_node_weight + 1:
+                if node_weight > current_node_weight + addition:
 
-                    self.__weights[node[0]][node[1]] = current_node_weight + 1
+                    self.__weights[node[0]][node[1]] = current_node_weight + addition
                     self.__update_counter += 1
 
                     # print the cost of the end node
@@ -175,11 +179,10 @@ class WavefrontPlanner:
 
         for i in range(-1, 2):
             for j in range(-1, 2):
-                if i == 0 or j == 0:
-                    node_weight = self.__weights[current_node[0]+i][current_node[1]+j]
-                    if node_weight < min_value:
-                        min_value = node_weight
-                        next_node = [current_node[0]+i, current_node[1]+j]
+                node_weight = self.__weights[current_node[0]+i][current_node[1]+j]
+                if node_weight < min_value:
+                    min_value = node_weight
+                    next_node = [current_node[0]+i, current_node[1]+j]
 
         if current_direction is not None:
             current_direction_node = [current_node[0] + current_direction[0], current_node[1] + current_direction[1]]
@@ -363,7 +366,7 @@ if __name__ == '__main__':
 
     bfs_planner = WavefrontPlanner(os.path.join(os.path.dirname(__file__), '..', 'files', map_file_name), logger)
     bfs_planner.propagate_wavefront_bfs()
-    optimal_path = bfs_planner.get_optimal_smooth_path()
+    optimal_path = bfs_planner.get_optimal_path()
     bfs_planner.save_path_map(optimal_path, 'bfs')
 
     ids_planner = WavefrontPlanner(os.path.join(os.path.dirname(__file__), '..', 'files', map_file_name), logger)
