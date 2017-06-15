@@ -1,6 +1,6 @@
 
 import os
-import time
+import numpy as np
 from scipy import misc
 from stack import Stack
 from queue import Queue
@@ -168,12 +168,65 @@ class WavefrontPlanner:
         # if got here so shouldn't stop
         return False
 
-    def get_optimal_path(self):
-        # find optimal path
-        return 0
+    def __get_next_node(self, current_node):
+        min_value = self.__max_possible_steps
+        next_node = None
 
-    def store_path_image(self, path):
-        pass
+        for i in range(-1, 2):
+            for j in range(-1, 2):
+                node_weight = self.__weights[current_node[0]+i][current_node[1]+j]
+                if node_weight < min_value:
+                    min_value = node_weight
+                    next_node = [current_node[0]+i, current_node[1]+j]
+
+        return next_node
+
+    def get_optimal_path(self):
+        path = list()
+
+        current_node = self.__start_coordinates
+        while current_node != self.__goal_coordinates:
+            path.append(current_node)
+            current_node = self.__get_next_node(current_node)
+
+        return path[1:]
+
+    def save_path_map(self, path, algorithm_name):
+        # duplicate map
+        new_map = list()
+        for row in self.__world_map:
+            new_map.append(list(row))
+
+        # color path
+        for node in path:
+            new_map[node[0]][node[1]] = 4   # green
+
+        # convert map to np array with RGB color scheme
+        for i in range(self.__world_height):
+            new_map[i] = np.array(map(WavefrontPlanner.__get_rgb_color, new_map[i]))
+            # for j in range(self.__world_width):
+            #     new_map[i][j] = WavefrontPlanner.__get_rgb_color(new_map[i][j])
+        new_map = np.array(new_map)
+
+        # read file
+        self.__logger.log('saving map into file')
+        with open(algorithm_name + '_output.bmp', 'wb') as image_file_obj:
+            misc.imsave(image_file_obj, new_map)
+
+    @staticmethod
+    def __get_rgb_color(cell_value):
+        if cell_value == 0:         # empty cell
+            return [255, 255, 255]  # white
+        elif cell_value == 1:       # wall
+            return [0, 0, 0]        # black
+        elif cell_value == 2:       # start
+            return [0, 0, 255]      # blue
+        elif cell_value == 3:       # goal
+            return [255, 0, 0]      # red
+        elif cell_value == 4:       # path
+            return [0, 255, 0]      # green
+        else:
+            raise Exception('unsupported cell type: {cell_value}'.format(cell_value=cell_value))
 
     def __load_map(self, map_file_path):
         """
@@ -181,6 +234,8 @@ class WavefrontPlanner:
         :param map_file_path:
         :return:
         """
+        self.__logger.log('loading {file_name}'.format(file_name=map_file_path))
+
         parsed_data_file_path = map_file_path.split('.')[0] + '.data'
         if not os.path.exists(parsed_data_file_path):
             self.__parse_file(map_file_path)
@@ -230,11 +285,12 @@ class WavefrontPlanner:
     def __parse_file(self, map_file_path):
         # read file
         self.__logger.log('loading map file')
-        with open(map_file_path) as image_file_obj:
+        with open(map_file_path, 'rb') as image_file_obj:
             image_content = misc.imread(image_file_obj)
 
         self.__start_coordinates = None
         self.__goal_coordinates = None
+
         self.__world_height = image_content.shape[0]
         self.__world_width = image_content.shape[1]
 
@@ -263,9 +319,11 @@ class WavefrontPlanner:
                 elif (image_content[i][j] == [255, 255, 255]).all():  # white
                     cell_value = 0
                 else:
-                    raise Exception(
-                        'cell [{i}, {j}] color not allowed: {color}'.format(i=i, j=j, color=image_content[i][j])
+                    self.__logger.log(
+                        'assuming cell is wall: [{i}, {j}], color={color}'.format(i=i, j=j, color=image_content[i][j]),
+                        should_print=False
                     )
+                    cell_value = 1
                 self.__world_map[i].append(cell_value)
 
         if self.__start_coordinates is None or self.__goal_coordinates is None:
@@ -277,11 +335,17 @@ class WavefrontPlanner:
 if __name__ == '__main__':
     logger = Logger()
 
-    bfs_planner = WavefrontPlanner(os.path.join(os.path.dirname(__file__), '..', 'files', 'map_with_goals.bmp'), logger)
-    bfs_planner.propagate_wavefront_bfs()
+    map_file_name = 'tiny_map.bmp'
 
-    ids_planner = WavefrontPlanner(os.path.join(os.path.dirname(__file__), '..', 'files', 'map_with_goals.bmp'), logger)
+    bfs_planner = WavefrontPlanner(os.path.join(os.path.dirname(__file__), '..', 'files', map_file_name), logger)
+    bfs_planner.propagate_wavefront_bfs()
+    optimal_path = bfs_planner.get_optimal_path()
+    bfs_planner.save_path_map(optimal_path, 'bfs')
+
+    ids_planner = WavefrontPlanner(os.path.join(os.path.dirname(__file__), '..', 'files', map_file_name), logger)
     ids_planner.propagate_wavefront_ids()
+    optimal_path = ids_planner.get_optimal_path()
+    ids_planner.save_path_map(optimal_path, 'ids')
 
     # optimal_path = planner.get_optimal_path()
     # planner.store_path_image(optimal_path)

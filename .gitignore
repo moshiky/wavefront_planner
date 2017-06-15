@@ -104,3 +104,5 @@ ENV/
 .idea/
 logs/
 .data
+bfs_output.bmp
+ids_output.bmp
