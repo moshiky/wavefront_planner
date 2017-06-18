@@ -154,10 +154,6 @@ class WavefrontPlanner:
                 self.__weights[node[0]][node[1]] = current_node_weight + 1
                 self.__update_counter += 1
 
-                # print the cost of the end node
-                # self.__logger.log('********************************')
-                # self.__logger.log('\n'.join(str(x) for x in self.__weights))
-
                 # stop if start node reached
                 if node[0] == self.__start_coordinates[0] and node[1] == self.__start_coordinates[1]:
                     return True
@@ -260,16 +256,16 @@ class WavefrontPlanner:
 
     def __get_propagation_row_color(self, original_row, row_index, color_change_interval):
         new_row = list()
-        mid_color_width = 180
+
         for j in range(self.__world_width):
             new_cell = original_row[j]
             if (new_cell == [255, 255, 255]).all():   # we color just white cells
                 if self.__weights[row_index][j] < self.__max_possible_steps:    # cell was updated
                     color_index = (self.__weights[row_index][j] - 2) * color_change_interval
                     new_cell = [
-                        (255 - (color_index * (255.0 / (255+mid_color_width)))) if color_index < 255+mid_color_width else 0,
-                        0,
-                        ((color_index - mid_color_width) * (255.0 / (255 + mid_color_width))) if mid_color_width < color_index else 0
+                        (255 - color_index) if color_index < 255 else 0,
+                        color_index if color_index < 255 else (510 - color_index),
+                        (color_index - 255) if 255 <= color_index else 0
                     ]
 
             new_row.append(new_cell)
