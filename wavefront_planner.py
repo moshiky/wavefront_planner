@@ -32,6 +32,9 @@ class WavefrontPlanner:
         # initiate update counter
         self.__update_counter = 0
 
+        # initiate maximal weight
+        self.__max_weight = 0
+
     def __is_valid_child(self, child_node, path_to_root):
         return \
             child_node not in path_to_root \
@@ -70,7 +73,7 @@ class WavefrontPlanner:
     def __bfs_update(self, wavefront):
         start_found = False
         visited = list()
-        max_weight = 0
+        self.__max_weight = 0
 
         while not wavefront.is_empty() and not start_found:
             current_node = wavefront.pop()
@@ -78,8 +81,8 @@ class WavefrontPlanner:
             visited.append(current_node)
 
             current_node_weight = self.__weights[current_node[0]][current_node[1]]
-            if current_node_weight > max_weight:
-                max_weight = current_node_weight
+            if current_node_weight > self.__max_weight:
+                self.__max_weight = current_node_weight
                 self.__logger.log('depth= {depth}'.format(depth=current_node_weight))
 
             # get child nodes
@@ -231,14 +234,51 @@ class WavefrontPlanner:
         # convert map to np array with RGB color scheme
         for i in range(self.__world_height):
             new_map[i] = np.array(map(WavefrontPlanner.__get_rgb_color, new_map[i]))
-            # for j in range(self.__world_width):
-            #     new_map[i][j] = WavefrontPlanner.__get_rgb_color(new_map[i][j])
         new_map = np.array(new_map)
 
         # read file
         self.__logger.log('saving map into file')
         with open(algorithm_name + '_output.bmp', 'wb') as image_file_obj:
             misc.imsave(image_file_obj, new_map)
+
+    def save_propagation_map(self, algorithm_name):
+        # duplicate map
+        new_map = list()
+        for row in self.__world_map:
+            new_map.append(list(row))
+
+        # calculate color change interval
+        color_change_interval = int((255*2) / (self.__max_weight-2))
+
+        # convert map to np array with RGB color scheme
+        for i in range(self.__world_height):
+            new_map[i] = np.array(map(WavefrontPlanner.__get_rgb_color, new_map[i]))
+            new_map[i] = self.__get_propagation_row_color(new_map[i], i, color_change_interval)
+
+        new_map = np.array(new_map)
+
+        # read file
+        self.__logger.log('saving map into file')
+        with open(algorithm_name + '_propagation_output.bmp', 'wb') as image_file_obj:
+            misc.imsave(image_file_obj, new_map)
+
+    def __get_propagation_row_color(self, original_row, row_index, color_change_interval):
+        new_row = list()
+
+        for j in range(self.__world_width):
+            new_cell = original_row[j]  # white
+            if (new_cell == [255, 255, 255]).all():   # we color just white cells
+                if self.__weights[row_index][j] < self.__max_possible_steps:    # cell was updated
+                    color_index = (self.__weights[row_index][j] - 2) * color_change_interval
+                    new_cell = [
+                        max(color_index, 25) if color_index < 255 else 25,
+                        0,
+                        max(color_index - 510, 25)
+                    ]
+
+            new_row.append(new_cell)
+
+        return new_row
 
     @staticmethod
     def __get_rgb_color(cell_value):
@@ -366,6 +406,7 @@ if __name__ == '__main__':
 
     bfs_planner = WavefrontPlanner(os.path.join(os.path.dirname(__file__), '..', 'files', map_file_name), logger)
     bfs_planner.propagate_wavefront_bfs()
+    bfs_planner.save_propagation_map('bfs')
     optimal_path = bfs_planner.get_optimal_path()
     bfs_planner.save_path_map(optimal_path, 'bfs')
 
