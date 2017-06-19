@@ -173,13 +173,14 @@ class WavefrontPlanner:
 
         for i in range(-1, 2):
             for j in range(-1, 2):
-                node_weight = self.__weights[current_node[0]+i][current_node[1]+j]
-                if node_weight <= min_value:
-                    if node_weight < min_value:
-                        min_value = node_weight
-                        best_nodes = list()
+                if 0 <= current_node[0]+i < self.__world_height and 0 <= current_node[1]+j < self.__world_width:
+                    node_weight = self.__weights[current_node[0]+i][current_node[1]+j]
+                    if node_weight <= min_value:
+                        if node_weight < min_value:
+                            min_value = node_weight
+                            best_nodes = list()
 
-                    best_nodes.append([current_node[0]+i, current_node[1]+j])
+                        best_nodes.append([current_node[0]+i, current_node[1]+j])
 
         # if current_direction is not None:
         #     current_direction_node = [current_node[0] + current_direction[0], current_node[1] + current_direction[1]]
@@ -256,7 +257,7 @@ class WavefrontPlanner:
             new_map.append(list(row))
 
         # calculate color change interval
-        color_change_interval = int((255*2) / (self.__max_weight-2))
+        color_change_interval = (255.0*2) / (self.__max_weight-2)
 
         # convert map to np array with RGB color scheme
         for i in range(self.__world_height):
@@ -277,7 +278,7 @@ class WavefrontPlanner:
             new_cell = original_row[j]
             if (new_cell == [255, 255, 255]).all():   # we color just white cells
                 if self.__weights[row_index][j] < self.__max_possible_steps:    # cell was updated
-                    color_index = (self.__weights[row_index][j] - 2) * color_change_interval
+                    color_index = int((self.__weights[row_index][j] - 2) * color_change_interval)
                     new_cell = [
                         (255 - color_index) if color_index < 255 else 0,
                         color_index if color_index < 255 else (510 - color_index),
@@ -410,7 +411,7 @@ class WavefrontPlanner:
 if __name__ == '__main__':
     logger = Logger()
 
-    map_file_name = 'maze_with_goals.bmp'
+    map_file_name = 'tiny_map.bmp'
 
     bfs_planner = WavefrontPlanner(os.path.join(os.path.dirname(__file__), '..', 'files', map_file_name), logger)
     bfs_planner.propagate_wavefront_bfs()
