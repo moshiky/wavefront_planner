@@ -77,7 +77,6 @@ class WavefrontPlanner:
 
         while not wavefront.is_empty() and not start_found:
             current_node = wavefront.pop()
-            # self.__logger.log(str(current_node))
             visited.append(current_node)
 
             current_node_weight = self.__weights[current_node[0]][current_node[1]]
@@ -170,21 +169,38 @@ class WavefrontPlanner:
 
     def __get_next_node(self, current_node, current_direction=None):
         min_value = self.__max_possible_steps
-        next_node = None
+        best_nodes = list()
 
         for i in range(-1, 2):
             for j in range(-1, 2):
                 node_weight = self.__weights[current_node[0]+i][current_node[1]+j]
-                if node_weight < min_value:
-                    min_value = node_weight
-                    next_node = [current_node[0]+i, current_node[1]+j]
+                if node_weight <= min_value:
+                    if node_weight < min_value:
+                        min_value = node_weight
+                        best_nodes = list()
 
-        if current_direction is not None:
-            current_direction_node = [current_node[0] + current_direction[0], current_node[1] + current_direction[1]]
-            if self.__weights[current_direction_node[0]][current_direction_node[1]] == next_node:
-                next_node = current_direction_node
+                    best_nodes.append([current_node[0]+i, current_node[1]+j])
 
-        return next_node
+        # if current_direction is not None:
+        #     current_direction_node = [current_node[0] + current_direction[0], current_node[1] + current_direction[1]]
+        #     if self.__weights[current_direction_node[0]][current_direction_node[1]] == best_nodes:
+        #         best_nodes = current_direction_node
+
+        closest_node = best_nodes[0]
+        minimal_distance = self.__get_goal_distance(closest_node)
+        for node in best_nodes:
+            goal_distance = self.__get_goal_distance(node)
+            if goal_distance < minimal_distance:
+                minimal_distance = goal_distance
+                closest_node = node
+
+        return closest_node
+
+    def __get_goal_distance(self, node):
+        return np.sqrt(
+            np.square(self.__goal_coordinates[0] - node[0])
+            + np.square(self.__goal_coordinates[1] - node[1])
+        )
 
     def get_optimal_path(self):
         path = list()
@@ -394,7 +410,7 @@ class WavefrontPlanner:
 if __name__ == '__main__':
     logger = Logger()
 
-    map_file_name = 'tiny_map.bmp'
+    map_file_name = 'maze_with_goals.bmp'
 
     bfs_planner = WavefrontPlanner(os.path.join(os.path.dirname(__file__), '..', 'files', map_file_name), logger)
     bfs_planner.propagate_wavefront_bfs()
@@ -402,8 +418,4 @@ if __name__ == '__main__':
     optimal_path = bfs_planner.get_optimal_path()
     bfs_planner.save_path_map(optimal_path, 'bfs')
 
-    ids_planner = WavefrontPlanner(os.path.join(os.path.dirname(__file__), '..', 'files', map_file_name), logger)
-    ids_planner.propagate_wavefront_ids()
-    optimal_path = ids_planner.get_optimal_path()
-    ids_planner.save_path_map(optimal_path, 'ids')
 
